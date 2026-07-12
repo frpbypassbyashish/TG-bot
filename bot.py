@@ -251,13 +251,14 @@ def token_generated_callback(call):
     bot.answer_callback_query(call.id, "✅ Please send your Token or Link now!")
 
 # ============================================
-# 🔹 HANDLE USER INPUT
+# 🔹 HANDLE USER INPUT - TOKEN OR LINK
 # ============================================
 @bot.message_handler(func=lambda msg: True)
 def handle_user_input(message):
     user_id = str(message.from_user.id)
     text = message.text.strip()
     
+    # Skip commands and button texts
     if text.startswith('/') or text in ["🔗 Bind FF ID", "📧 Bind Gmail", "🔄 ID Transfer", 
                                         "💰 Check Balance", "📊 My Status", "🎫 My Access Token",
                                         "📞 Admin Contact", "➕ Add Balance", "🔑 Generate Access Token"]:
@@ -450,7 +451,7 @@ def add_balance_request(message):
         bot.reply_to(message, caption, reply_markup=markup)
 
 # ============================================
-# 🔹 SERVICE HANDLERS
+# 🔹 SERVICE: BIND FF ID
 # ============================================
 @bot.message_handler(func=lambda msg: msg.text == "🔗 Bind FF ID")
 def bind_ff(message):
@@ -463,60 +464,6 @@ def bind_ff(message):
     else:
         show_payment_with_qr(message, 'bind_ff')
 
-@bot.message_handler(func=lambda msg: msg.text == "📧 Bind Gmail")
-def bind_gmail(message):
-    user_id = str(message.from_user.id)
-    price = SERVICES['bind_gmail']['price']
-    if user_balances.get(user_id, 0) >= price:
-        user_flow[user_id] = {'service': 'bind_gmail', 'step': 'name', 'price': price}
-        msg = bot.reply_to(message, "📤 **Enter your Free Fire Name:**")
-        bot.register_next_step_handler(msg, process_gmail_name)
-    else:
-        show_payment_with_qr(message, 'bind_gmail')
-
-@bot.message_handler(func=lambda msg: msg.text == "🔄 ID Transfer")
-def id_transfer(message):
-    user_id = str(message.from_user.id)
-    price = SERVICES['id_transfer']['price']
-    if user_balances.get(user_id, 0) >= price:
-        user_flow[user_id] = {'service': 'id_transfer', 'step': 'name', 'price': price}
-        msg = bot.reply_to(message, "📤 **Enter your Free Fire Name:**")
-        bot.register_next_step_handler(msg, process_transfer_name)
-    else:
-        show_payment_with_qr(message, 'id_transfer')
-
-def show_payment_with_qr(message, service):
-    user_id = str(message.from_user.id)
-    service_data = SERVICES[service]
-    caption = f"""❌ **Insufficient Balance!**
-
-💰 Your Balance: ₹{user_balances.get(user_id, 0)}
-💵 Required: ₹{service_data['price']}
-
-━━━━━━━━━━━━━━━━━━━━━━
-📌 **Service:** {service_data['name']}
-💰 **Amount:** ₹{service_data['price']}
-━━━━━━━━━━━━━━━━━━━━━━
-
-✨ **Features:**
-{service_data['features']}
-━━━━━━━━━━━━━━━━━━━━━━
-
-💳 **Payment Details:**
-📱 Phone: {payment_settings['phone']}
-📧 UPI: {payment_settings['upi']}
-━━━━━━━━━━━━━━━━━━━━━━
-
-📸 **After payment, send screenshot here:"""
-    markup = back_button()
-    try:
-        bot.send_photo(message.chat.id, payment_settings['qr_url'], caption=caption, reply_markup=markup)
-    except:
-        bot.reply_to(message, caption, reply_markup=markup)
-
-# ============================================
-# 🔹 PROCESS - BIND FF
-# ============================================
 def process_bind_name(message):
     user_id = str(message.from_user.id)
     name = message.text.strip()
@@ -584,7 +531,7 @@ def process_bind_gmail(message):
 💵 Remaining Balance: ₹{user_balances[user_id]}
 
 ⏳ **Please Wait 24 Hours!**""", reply_markup=main_menu())
-    bot.send_message(ADMIN_ID, f"""🆕 **NEW REQUEST!**
+    bot.send_message(ADMIN_ID, f"""🆕 **NEW BIND FF REQUEST!**
 👤 {message.from_user.first_name}
 🆔 {user_id}
 🎮 {flow['name']} | UID: {flow['uid']}
@@ -594,8 +541,19 @@ def process_bind_gmail(message):
         del user_flow[user_id]
 
 # ============================================
-# 🔹 PROCESS - BIND GMAIL
+# 🔹 SERVICE: BIND GMAIL
 # ============================================
+@bot.message_handler(func=lambda msg: msg.text == "📧 Bind Gmail")
+def bind_gmail(message):
+    user_id = str(message.from_user.id)
+    price = SERVICES['bind_gmail']['price']
+    if user_balances.get(user_id, 0) >= price:
+        user_flow[user_id] = {'service': 'bind_gmail', 'step': 'name', 'price': price}
+        msg = bot.reply_to(message, "📤 **Enter your Free Fire Name:**")
+        bot.register_next_step_handler(msg, process_gmail_name)
+    else:
+        show_payment_with_qr(message, 'bind_gmail')
+
 def process_gmail_name(message):
     user_id = str(message.from_user.id)
     name = message.text.strip()
@@ -663,7 +621,7 @@ def process_gmail_final(message):
 💵 Remaining Balance: ₹{user_balances[user_id]}
 
 ⏳ **Please Wait 24 Hours!**""", reply_markup=main_menu())
-    bot.send_message(ADMIN_ID, f"""🆕 **NEW GMAIL BIND REQUEST!**
+    bot.send_message(ADMIN_ID, f"""🆕 **NEW BIND GMAIL REQUEST!**
 👤 {message.from_user.first_name}
 🆔 {user_id}
 🎮 {flow['name']} | UID: {flow['uid']}
@@ -673,8 +631,19 @@ def process_gmail_final(message):
         del user_flow[user_id]
 
 # ============================================
-# 🔹 PROCESS - ID TRANSFER
+# 🔹 SERVICE: ID TRANSFER
 # ============================================
+@bot.message_handler(func=lambda msg: msg.text == "🔄 ID Transfer")
+def id_transfer(message):
+    user_id = str(message.from_user.id)
+    price = SERVICES['id_transfer']['price']
+    if user_balances.get(user_id, 0) >= price:
+        user_flow[user_id] = {'service': 'id_transfer', 'step': 'name', 'price': price}
+        msg = bot.reply_to(message, "📤 **Enter your Free Fire Name:**")
+        bot.register_next_step_handler(msg, process_transfer_name)
+    else:
+        show_payment_with_qr(message, 'id_transfer')
+
 def process_transfer_name(message):
     user_id = str(message.from_user.id)
     name = message.text.strip()
@@ -908,6 +877,111 @@ def use_transfer_token_callback(call):
         bot.answer_callback_query(call.id, "✅ Service Started!")
 
 # ============================================
+# 🔹 SHOW PAYMENT WITH QR
+# ============================================
+def show_payment_with_qr(message, service):
+    user_id = str(message.from_user.id)
+    service_data = SERVICES[service]
+    caption = f"""❌ **Insufficient Balance!**
+
+💰 Your Balance: ₹{user_balances.get(user_id, 0)}
+💵 Required: ₹{service_data['price']}
+
+━━━━━━━━━━━━━━━━━━━━━━
+📌 **Service:** {service_data['name']}
+💰 **Amount:** ₹{service_data['price']}
+━━━━━━━━━━━━━━━━━━━━━━
+
+✨ **Features:**
+{service_data['features']}
+━━━━━━━━━━━━━━━━━━━━━━
+
+💳 **Payment Details:**
+📱 Phone: {payment_settings['phone']}
+📧 UPI: {payment_settings['upi']}
+━━━━━━━━━━━━━━━━━━━━━━
+
+📸 **After payment, send screenshot here:**"""
+    markup = back_button()
+    try:
+        bot.send_photo(message.chat.id, payment_settings['qr_url'], caption=caption, reply_markup=markup)
+    except:
+        bot.reply_to(message, caption, reply_markup=markup)
+
+# ============================================
+# 🔹 HANDLE SCREENSHOT
+# ============================================
+@bot.message_handler(content_types=['photo'])
+def handle_screenshot(message):
+    user_id = str(message.from_user.id)
+    
+    # Check if user has pending service
+    if user_id not in user_flow and user_id not in user_data:
+        bot.reply_to(message, "❌ No pending payment request found!\n\nPlease select a service first.", reply_markup=main_menu())
+        return
+    
+    file_id = message.photo[-1].file_id
+    
+    # Check if user has a pending service in flow
+    if user_id in user_flow:
+        service = user_flow[user_id].get('service', 'unknown')
+        service_name = SERVICES.get(service, {}).get('name', 'Unknown Service')
+        price = user_flow[user_id].get('price', 0)
+        
+        bot.send_photo(ADMIN_ID, file_id,
+            caption=f"""📸 **PAYMENT SCREENSHOT RECEIVED!**
+
+👤 User ID: {user_id}
+👤 Username: @{message.from_user.username or 'N/A'}
+📌 Service: {service_name}
+💰 Amount: ₹{price}
+⏰ Time: {time.ctime()}
+
+✅ Please verify and add balance:
+/addbalance {user_id} {price}""")
+        
+        bot.reply_to(message, f"""✅ **Screenshot Received!**
+
+📌 Service: {service_name}
+💰 Amount: ₹{price}
+
+📌 Admin will verify your payment.
+⏰ This may take 2-4 hours.
+
+✅ You will be notified once approved.
+🔙 Then start the service again.""", reply_markup=main_menu())
+        return
+    
+    # If user has pending request in user_data
+    if user_id in user_data:
+        service_name = user_data[user_id].get('service_name', 'Unknown Service')
+        price = user_data[user_id].get('amount', 0)
+        
+        bot.send_photo(ADMIN_ID, file_id,
+            caption=f"""📸 **PAYMENT SCREENSHOT RECEIVED!**
+
+👤 User ID: {user_id}
+👤 Username: @{message.from_user.username or 'N/A'}
+📌 Service: {service_name}
+💰 Amount: ₹{price}
+⏰ Time: {time.ctime()}
+
+✅ Please verify and add balance:
+/addbalance {user_id} {price}""")
+        
+        bot.reply_to(message, f"""✅ **Screenshot Received!**
+
+📌 Service: {service_name}
+💰 Amount: ₹{price}
+
+📌 Admin will verify your payment.
+⏰ This may take 2-4 hours.
+
+✅ You will be notified once approved.
+🔙 Then start the service again.""", reply_markup=main_menu())
+        return
+
+# ============================================
 # 🔹 ADMIN COMMANDS
 # ============================================
 @bot.message_handler(commands=['admin'])
@@ -960,6 +1034,41 @@ def admin_broadcast(message):
             except:
                 pass
     bot.reply_to(message, f"✅ Broadcast sent to {sent} users!")
+
+@bot.message_handler(commands=['setupi'])
+def admin_set_upi(message):
+    if str(message.from_user.id) != str(ADMIN_ID):
+        return
+    upi = message.text.replace("/setupi ", "").strip()
+    if not upi:
+        bot.reply_to(message, "❌ Usage: /setupi your@upi")
+        return
+    payment_settings['upi'] = upi
+    bot.reply_to(message, f"✅ UPI updated to: {upi}")
+
+@bot.message_handler(commands=['setphone'])
+def admin_set_phone(message):
+    if str(message.from_user.id) != str(ADMIN_ID):
+        return
+    phone = message.text.replace("/setphone ", "").strip()
+    if not phone:
+        bot.reply_to(message, "❌ Usage: /setphone 9876543210")
+        return
+    payment_settings['phone'] = phone
+    bot.reply_to(message, f"✅ Phone updated to: {phone}")
+
+@bot.message_handler(commands=['sendto'])
+def admin_send_to_user(message):
+    if str(message.from_user.id) != str(ADMIN_ID):
+        return
+    try:
+        parts = message.text.split(" ", 2)
+        user_id = parts[1]
+        msg_text = parts[2]
+        bot.send_message(user_id, f"📩 **Message from Admin:**\n\n{msg_text}")
+        bot.reply_to(message, f"✅ Message sent to {user_id}")
+    except:
+        bot.reply_to(message, "❌ Usage: /sendto <user_id> <message>")
 
 # ============================================
 # 🔹 CALLBACK HANDLER
@@ -1159,7 +1268,6 @@ def process_qr_upload(message):
 # 🔹 FLASK + POLLING (RENDER FIX)
 # ============================================
 def run_bot():
-    """Bot polling in background thread"""
     print("🤖 Bot polling started...")
     try:
         bot.infinity_polling()
@@ -1189,10 +1297,8 @@ if __name__ == "__main__":
     print("✅ Bot is ready to use!")
     print("="*50)
     
-    # Start bot polling in background
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
     
-    # Start Flask server (for Render)
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
